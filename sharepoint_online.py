@@ -51,7 +51,7 @@ def get_file_names(ctx, url, folder):
         files.append(file)
     return files
 
-def download_file_from_spo(ctx, url, source, file, target):
+def download_file(ctx, url, source, file, target):
     """download file from SPO to target folder"""
     rel_url = url[url.find('sites') - 1 :]
     if source:
