@@ -64,3 +64,18 @@ def download_file(ctx, url, source, file, target):
     response.raise_for_status()
     with open(local_file_path, 'wb') as local_file:
         local_file.write(response.content)
+
+def upload_file_to_spo(ctx, url, target, source, file):
+    rel_url = url[url.find("sites") - 1 :]
+    path = os.path.join(source, file)
+    with open(path, "rb") as content_file:
+        file_content = content_file.read()
+    target_folder = ctx.web.get_folder_by_server_relative_url(
+        f"/{rel_url}/Shared%20Documents/{target}"
+    )
+    info = FileCreationInformation()
+    info.content = file_content
+    info.url = os.path.basename(path)
+    info.overwrite = True
+    target_file = target_folder.files.add(info)
+    ctx.execute_query()
