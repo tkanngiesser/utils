@@ -1,3 +1,12 @@
+#!pip install Office365-REST-Python-Client
+#!pip install Office365
+
+class PackageInstaller():
+    def __init__(self):
+        !pip install Office365-REST-Python-Client
+        !pip install Office365
+PackageInstaller()
+
 import os
 import numpy as np
 import pandas as pd
