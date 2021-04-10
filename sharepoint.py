@@ -1,11 +1,11 @@
-#!pip install Office365-REST-Python-Client
-#!pip install Office365
+import subprocess
+import sys
 
-class PackageInstaller():
-    def __init__(self):
-        !pip install Office365-REST-Python-Client
-        !pip install Office365
-PackageInstaller()
+def install(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+    
+install('Office365-REST-Python-Client')
+install('Office365')
 
 import os
 import numpy as np
