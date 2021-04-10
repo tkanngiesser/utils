@@ -2,6 +2,7 @@ import subprocess
 import sys
 
 def install(package):
+    print(f'Installing {package}...')
     subprocess.check_call([sys.executable, "-m", "pip", "install", package])
     
 install('Office365-REST-Python-Client')
