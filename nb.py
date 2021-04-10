@@ -26,16 +26,3 @@ def patch(f):
     "Decorator: add `f` to the first parameter's class (based on f's type annotations)"
     cls = next(iter(f.__annotations__.values()))
     return patch_to(cls)(f)
-  
-"""
-class MyClass():
-    def __init__(self):
-        pass
-    
-@patch
-def new_fun(self:MyClass):
-    print("I'm a patched function!")
-    
-MyInstance = MyClass()
-MyInstance.new_fun()
-"""
