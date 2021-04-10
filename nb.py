@@ -2,6 +2,16 @@ import functools
 from types import FunctionType
 
 # allows to split classes to multiple jupyter cells
+"""
+class Bar():
+    def __init__(self, x):
+        self.x = x
+b = Bar(x='hello')
+
+@patch
+def say(self:Bar):
+    print(self.x)
+"""
 def copy_func(f):
     "Copy a non-builtin function (NB `copy.copy` does not work for this)"
     if not isinstance(f,FunctionType): return copy(f)
