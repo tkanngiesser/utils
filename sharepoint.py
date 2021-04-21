@@ -75,7 +75,7 @@ def download_file(ctx, url, source, file, target):
     with open(local_file_path, 'wb') as local_file:
         local_file.write(response.content)
 
-def upload_file_to_spo(ctx, url, target, source, file):
+def upload_file(ctx, url, target, source, file):
     rel_url = url[url.find("sites") - 1 :]
     path = os.path.join(source, file)
     with open(path, "rb") as content_file:
