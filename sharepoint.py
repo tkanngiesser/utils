@@ -89,3 +89,98 @@ def upload_file(ctx, url, target, source, file):
     info.overwrite = True
     target_file = target_folder.files.add(info)
     ctx.execute_query()
+
+    
+### sharepoint
+
+# move to processing
+def validate_df(df, schema):
+    '''validates and splits bad and good date'''
+    df_bad = None
+    errors = schema.validate(df)
+    errors_idxs = [e.row for e in errors]
+    if len(errors_idxs) != 0 and errors_idxs != [-1]:
+        df_good = df.drop(index=errors_idxs)
+        df_bad = df.iloc[errors_idxs]
+        df_bad['error'] = errors
+        df = df_good
+    return df, df_bad
+  
+# move to processing
+def split_and_upload_df_to_spo(df, metadata, existing_files, target_folder, target_spo_folder):
+    for name, group in df.groupby(metadata['split_cols']):
+        file_name = f'{metadata["entity"]}-{name[0]}-{name[1]}.csv'
+        print(file_name)
+        if file_name in existing_files:
+            spo.download_file(ctx=spo_cxn, url=cxn['spo_url'], 
+                              source=target_spo_folder, 
+                              file=file_name, target=target_folder)
+            df_existing = pd.read_csv(os.path.join(target_folder, file_name))
+            df_existing.append(group)
+            df_existing = df_existing.drop_duplicates(subset=metadata['unique_id_cols'])
+            df_existing.to_csv(os.path.join(target_folder, file_name), index=False)
+        else:
+            print('new file needs to be created')
+            group.to_csv(os.path.join(target_folder, file_name), encoding=metadata['encoding'], index=False)
+        spo.upload_file(ctx=spo_cxn, url=cxn['spo_url'], target=target_spo_folder, source=target_folder, file=file_name)
+        existing_files.append(file_name)
+        time.sleep(1) 
+        #os.remove(os.path.join(target_folder, file_name))
+        cxn['target_files_to_exclude'].append(file_name)
+        return existing_files
+   
+# move to processing
+def process_files(cxn, config, metadata):
+
+    source_files = get_files_from_spo(spo_url=cxn['spo_url'],
+                                         spo_folder = cxn['source_spo_folder'], 
+                                         files_to_exlude=config['raw_files_to_exclude'])
+    if source_files != []:
+        for source_file in source_files:
+            print(f'processing {source_file}')
+            
+            spo.download_file(ctx=spo_cxn, url=cxn['spo_url'],
+                              source=cxn['source_spo_folder'],
+                              file=source_file, target=cxn['source_folder'])
+            df = pd.read_csv(os.path.join(cxn['source_folder'], source_file), 
+                             header=0, index_col=False, names=list(metadata['data_types'].keys()),
+                             encoding=metadata['encoding'])
+            
+            df, df_bad = validate_df(df=df, schema=metadata['schema'])
+            df_clean = clean_df(df)
+            
+            target_files = get_files_from_spo(spo_url = cxn['spo_url'],
+                               spo_folder = cxn['target_spo_folder'],
+                               files_to_exlude=[])
+
+
+            split_and_upload_df_to_spo(df=df_clean, metadata=metadata,
+                                       existing_files=target_files, 
+                                       target_folder=cxn['target_folder'],
+                                       target_spo_folder=cxn['target_spo_folder'])
+            
+            os.remove(os.path.join(cxn['source_folder'], source_file))
+            config['raw_files_to_exclude'].append(source_file)
+            config['raw_files_to_exclude'] = list(set(config['raw_files_to_exclude']))
+    else:
+        print('nothing to process..')
+    return config['raw_files_to_exclude']
+  
+### processing
+def fix_user_market(x):
+    x = str(x)
+    x = x.replace('VF - ', '')
+    x = x.replace('United Kingdom', 'UK')
+    x = x.replace('VSS', 'VOIS_')
+    x = x.replace(' -', '')
+    return x
+  
+# move to processing
+def get_files_from_spo(spo_url, spo_folder, files_to_exlude):
+    files = []
+    spo_files = spo.get_file_names(ctx=spo_cxn, url=spo_url, folder=spo_folder)
+    for i, file in enumerate(spo_files):
+        files.append(spo_files[i].properties['Name'])
+    files = [file for file in files if file not in files_to_exlude]
+    return files
+  
